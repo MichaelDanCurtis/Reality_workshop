@@ -1,0 +1,157 @@
+.workflow-editor input,
+.workflow-editor select {
+  padding: 7px;
+}
+.workflow-scroll {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  background-color: #161e22;
+  background-image: radial-gradient(#42535166 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.workflow-stage {
+  position: relative;
+  width: 1060px;
+  min-width: 1060px;
+  height: 510px;
+}
+.workflow-wires {
+  position: absolute;
+  width: 1060px;
+  height: 510px;
+  overflow: visible;
+  pointer-events: none;
+}
+.workflow-wires path {
+  fill: none;
+  stroke: #579987;
+  stroke-width: 2;
+}
+.workflow-block {
+  position: absolute;
+  width: 290px;
+  border: 1px solid #3e5552;
+  border-radius: 9px;
+  background: #202c30;
+  box-shadow: 0 9px 24px #0004;
+  overflow: hidden;
+}
+.workflow-block > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #2b3e3d;
+  border-bottom: 1px solid #415852;
+  font-size: 12px;
+  color: #cee6de;
+  cursor: grab;
+  touch-action: none;
+}
+.workflow-block > header > span {
+  margin-left: auto;
+  color: #6b9489;
+}
+.workflow-block > div {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.workflow-block label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 11px;
+}
+.workflow-block select {
+  width: 100%;
+  font-size: 10px;
+}
+.workflow-block p {
+  color: #91aaa7;
+  font-size: 11px;
+  line-height: 1.65;
+  margin: 0;
+}
+.workflow-block textarea {
+  resize: vertical;
+  min-height: 104px;
+  width: 100%;
+  padding: 10px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.workflow-block textarea.workflow-code {
+  font-family: ui-monospace, monospace;
+  min-height: 160px;
+}
+.workflow-mode {
+  display: flex;
+  gap: 8px;
+}
+.workflow-mode button {
+  font-size: 11px;
+  padding: 5px 7px;
+}
+.workflow-mode button.active {
+  background: #36594b;
+  color: #b7e7d5;
+  border-radius: 4px;
+}
+.workflow-port {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #96c1b4;
+}
+.workflow-port i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6ec7a8;
+}
+.workflow-output {
+  margin: 0 22px 25px;
+  padding: 16px;
+  background: #1d292d;
+  border: 1px solid #3b514d;
+  border-radius: 8px;
+  max-width: 1000px;
+}
+.workflow-output > .section-label {
+  padding: 0 0 14px;
+}
+.workflow-output > img {
+  max-height: 360px;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+  margin: auto;
+}
+.workflow-model {
+  height: 360px;
+  position: relative;
+}
+.workflow-photo-output {
+  display: flex;
+  gap: 16px;
+  overflow: auto;
+}
+.workflow-photo-output figure {
+  min-width: 220px;
+  max-width: 360px;
+  margin: 0;
+}
+.workflow-photo-output img {
+  max-width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+}
+.workflow-photo-output figcaption {
+  font-size: 11px;
+  color: #a6c2bb;
+  margin-top: 8px;
+}

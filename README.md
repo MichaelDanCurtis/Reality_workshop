@@ -1,56 +1,71 @@
-# Reality Workshop — Photo Studio v1
+# Reality Workshop — a shared creative suite
 
-A local desktop photo editor with a shared, reversible editing model and a Codex design partner. The first complete workflow is photo editing; the larger creative-studio direction remains in development.
+Reality Workshop puts **GIMP, Krita, darktable, Blender, and FreeCAD** behind one desktop interface. The suite owns the project, workspace layout, AI review, detached windows, and shared undo history. Each engine owns its native documents and processing.
 
-## Use the application
+This is a working first integration of all five engines. It exposes useful native operations in each workspace; it does not yet reproduce the full applications.
 
-The locally packaged Mac application is in `releases/Reality Workshop.app`. Windows and Linux share the Tauri/Rust/React foundation and have a prepared CI build matrix, but have not yet been run or released. This Mac build is a local development release, not a notarized installer.
+## Try it
 
-1. Choose **New photo project**, then **Import photos** (JPEG, PNG, WebP).
-2. In **Edit** or **Develop**, adjust exposure, contrast, saturation, and warmth. Use **Before** to compare. Every finished adjustment is undoable.
-3. Choose **Region**, draw a freehand outline or rectangle, and **Save region**. Select it in **Editing** to adjust only that area.
-4. Choose **Crop** and draw a rectangle, then **Apply crop**. Rotate and flip with the toolbar buttons. The original remains intact.
-5. In **Astra**, describe a supported color change. The app sends a preview and instruction through your local Codex sign-in. Inspect the proposal, then **Apply** or **Discard**.
-6. Select several photos in the strip, open **Batch**, preview the current photo's saved color settings on the set, then apply. Crops, rotations, and regional edits remain individual.
-7. **Export photo(s)** writes full-size PNG/JPEG images and a recipe manifest into a new folder. It does not overwrite imported originals.
-8. **Save** stores a portable `.workshop` document with source images and edits. **Save as…** creates a separate copy. A local recovery copy restores the last project after a restart; explicit Save is still the durable project-file operation.
+Open `releases/Reality Workshop.app` on this Mac. This is a locally signed development build, not a notarized installer. The engines are installed separately.
 
-## What v1 includes
+| Workspace | Engine | Available now |
+|---|---|---|
+| Edit | GIMP 3 | XCF documents, layers/groups, brushes/erase, selections, masks and mask painting, crop/rotate, blend/opacity, adjustments, PNG export |
+| Paint | Krita | KRA documents, installed brush presets, layers/groups, selections, masks and mask painting, crop/rotate, blend/opacity, PNG export |
+| Develop / Library | darktable | RAW/image import, native exposure/contrast/saturation/black controls, compare original, batch preview/apply, ratings/tags/filtering, full-size PNG and XMP export |
+| Scene | Blender | BLEND/GLB/glTF/STL import, native mesh preview, orbit/wireframe, primitives, dimensions/transforms, basic material color, booleans, background render, BLEND/GLB/STL export |
+| CAD | FreeCAD | FCStd/STEP/BREP import, parametric box/cylinder/sphere, dimensions/transforms, native union/cut, validity/volume, FCStd/STEP/STL export |
+| Workflows | Shared engine commands | Movable input/operation/review nodes, Astra proposals or JSON operation scripts, real engine previews, Apply/Discard, saved recipes, photo batch target |
 
-| Area | Working behavior |
-|---|---|
-| Photo editing | Exposure, contrast, saturation, warmth; before/after; reversible crop, rotate, flip |
-| Local adjustments | Freehand or rectangular regions with independent color settings |
-| AI collaboration | Image-aware proposals for supported color controls; explicit preview/apply/discard/undo |
-| Library and batch | Import multiple images, select a set, preview/copy color adjustments in one undo step |
-| Files | Save/open, legacy format migration, recovery copy, full-size PNG/JPEG export with recipe manifest |
-| Desktop | Shared project state, detached photo window, separate scene wireframe/render windows |
-| Scene experiment | Editable coastal starter model and real background Blender render |
+1. Open a photograph in **Edit**, add a layer, and paint or mask. **Copy layers to Paint** creates a separate Krita document with the same suite controls. Choose an installed Krita brush preset.
+2. Import photos or a project reference into **Develop**. Adjust the controls, preview the native darktable output, and Apply. Select several filmstrip images for one batch recipe. Rate/tag/search them in **Library**. **Copy to Edit** opens a full-resolution developed copy in GIMP.
+3. In **CAD**, create a part, change its dimensions, add another solid and subtract or unite it. **Copy to Scene** creates a Blender mesh copy with millimetres converted to metres. The original parametric CAD file stays intact.
+4. In **Scene**, create or open a model, orbit its mesh or wireframe, edit objects, and render in the background. **Coastal study** opens the earlier procedural house example; **Copy to Blender studio** converts that study into a native scene document.
+5. In **Astra** or **Workflows**, request a supported change. The engine generates an uncommitted preview; Apply creates one shared undo step. Unsupported image synthesis is explained rather than simulated.
+6. Detach a workspace onto another display. Save the project with its neighboring `.workshop-assets` directory; keep both together when moving it. Native XCF/KRA/FCStd/BLEND files, photograph originals, XMP recipes, and workflow recipes travel with the project.
 
-## Practical limits
+The earlier Rust photo tools remain available through **Photo markup** in Develop for region instructions, reversible crop/rotate/flip, localized adjustments, and PNG/JPEG export. They are a separate legacy photo path; the default Develop workspace uses darktable.
 
-- This is an 8-bit RGB photo workflow, not a RAW developer or a color-proofing system. Advanced ICC management, HDR/16-bit processing, EXIF export, and HEIC import are not implemented. Originals retain their embedded data in the project; finished exports do not retain all metadata.
-- Up to 40 megapixels and 20 MB per imported image, up to 100 photos, with approximately 90 MB of encoded source data per project (100 MB file cap). Region data also counts toward the cap. For larger collections, split them into projects.
-- Region boundaries are hard-edged. Pen pressure is recorded, but physical tablet acceptance remains unverified. Draft outlines, viewport cameras, and undo history are session-local; save a region before switching photos.
-- Recovery is debounced and cannot guarantee the final fraction of a second before a crash. Failed recovery writes are reported. Keep explicit saved project files.
-- AI image generation, object replacement/removal, brush painting, layers, PSD/XCF/KRA round trips, RAW workflows, parametric CAD, arbitrary 3D model import, and iPhone capture are not implemented. GIMP, Krita, darktable and FreeCAD editing adapters remain planned.
-- The current workflow graph is a small executable scene recipe, not a general node editor.
+## Handoffs and fidelity
 
-## Engines and account access
+Native files remain authoritative. Reduced canvas/mesh previews serve the common UI; full-resolution exports come from the engines. Save/reopen tests check native files, history tests check revision changes, and actual engine tests check rendered outputs independently.
 
-Photo processing uses the open-source Rust `image` crate. It runs locally in background workers; previews use reduced-resolution images while exports process the original dimensions.
+GIMP–Krita transfer uses OpenRaster and creates a copy. It is not lossless for every mask, filter, vector, or engine-specific feature. FreeCAD–Blender transfer uses a tessellated STL derivative, with explicit unit conversion; it does not transfer parametric constraints. Develop–Edit creates rendered pixels while retaining the original photograph and XMP recipe. None of these handoffs replaces its source.
 
-Codex is optional. On macOS the runtime bundled with ChatGPT/Codex is preferred over an older standalone CLI. Elsewhere it is discovered on PATH; `REALITY_WORKSHOP_CODEX` can point to an executable. Requests use ephemeral, read-only App Server threads with the existing local sign-in. Photo requests include an image preview. No credentials are copied into projects. Responses API and image-generation services are not connected by this subscription integration.
+## Practical boundaries
 
-Blender is optional and installed separately (on PATH, or the standard macOS Applications folder). Rendering writes a PNG, glTF snapshot, Blender document and log under the application's local data folder.
+- Each engine has a limited initial tool set. Text/vector editing, advanced filters, detailed brush configuration, sculpting/texture painting, CAD sketches/constraints, and broad modifier/material editing still need work.
+- GIMP/Krita previews are at most 1024 pixels per side. A tiled, high-resolution viewport and native tablet-event streaming are still needed. Krita pressure is passed to native line segments; physical pen behavior and long painting sessions are unverified.
+- darktable controls currently use its native basic-adjustments module, not its complete module stack. PNG exports are 8-bit. A synthetic DNG decoding test is not evidence of broad camera support, calibrated color accuracy, or ICC soft-proofing.
+- Workflows currently have a fixed input → operation → review topology. Recipes and node positions are saved. Arbitrary Python, branching graphs, general node authoring, and a model-download/job ecosystem are not implemented.
+- Limits include 32 raster documents (40 megapixels each), 16 model documents (up to 256 objects each), 100 developed photographs, and a 100 MB project manifest. Imported native files and photo originals are limited to 512 MB. The earlier embedded-reference path retains its 20 MB/image limit.
+- Immutable native revisions support undo/recovery. Disk-cache compaction, cancellation, and restart-safe undo history remain unfinished. Save explicitly; automatic recovery is debounced. Viewport positions are not restored across restarts.
+- Krita uses a hidden private worker in its desktop runtime. An existing standalone Krita process can prevent that worker from starting. Long-session resource use and independent profile isolation need further work.
+- Generative image replacement, image-to-3D reconstruction, and iPhone/LiDAR capture are not connected yet. A Codex subscription connection does not provide Responses API or image-generation API billing.
+- macOS engine execution has been tested locally. Windows/Linux discovery and CI configuration exist, but those platforms and physical multi-monitor unplug behavior have not been exercised here.
+
+## Engine and AI connections
+
+Engines run separately from the UI. Typed operations validate source identities, numeric ranges, and supported actions. Workers produce new native revisions; stale results cannot overwrite a newer project. AI uses those same operations and cannot submit arbitrary engine code.
+
+GIMP and Krita are found on PATH and in common installation folders. `REALITY_WORKSHOP_GIMP` and `REALITY_WORKSHOP_KRITA` override their executables. The Paint adapter installs and enables a small Workshop Python extension in Krita's user profile; it processes jobs only when launched with the suite's private queue environment.
+
+FreeCAD uses its headless command-line runtime, including the macOS `Contents/Resources/bin/freecadcmd` executable. Override with `REALITY_WORKSHOP_FREECAD_CMD`. Blender uses its background Python runtime with automatic file scripts disabled.
+
+The darktable adapter uses `darktable-cli`; override with `REALITY_WORKSHOP_DARKTABLE_CLI`. This Mac uses an official-source build of release 5.6.1, pinned to `03179f8e080aa9cedebfe14b098b7ba88940a292`, installed under the suite's application-support directory. `scripts/build-darktable-macos.sh` documents/reproduces that CPU build. It depends on local Homebrew libraries and is not a portable bundled engine installer.
+
+Codex requests use the existing local sign-in through App Server. The desktop-bundled runtime is preferred on macOS; `REALITY_WORKSHOP_CODEX` selects another executable. Requests include relevant document metadata and a preview for raster/photo changes. Credentials are not stored in projects.
 
 ## Build and verify
 
-Install Node.js 22+, current stable Rust, and the Tauri 2 prerequisites for your operating system. Run `npm ci`, then `npm run desktop`. `npm run dev` is a read-only browser preview.
+Install Node.js 22+, current stable Rust, and Tauri 2 prerequisites. Run `npm ci`, then `npm run desktop`. The browser preview is read-only.
 
 - `npm test`
 - `cargo test --manifest-path src-tauri/Cargo.toml --lib`
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --lib -- -D warnings`
-- `npm run package:mac` creates and verifies the local macOS app in `releases/`; `npm run tauri -- build` for platform packages elsewhere.
+- `npm run package:mac` builds and verifies the local macOS app.
+- `python3 scripts/check-native-engines.py <private Krita queue>` exercises installed GIMP/Krita APIs. See the script header.
+- `python3 scripts/check-spatial-engines.py` checks real FreeCAD/Blender files, volumes, imports/exports, units, and render output.
+- `python3 scripts/check-darktable-engine.py` checks real darktable output, unchanged sources, and synthetic RAW decoding.
 
-See [v1 acceptance](docs/V1.md), [validation evidence](docs/validation.md), and [integration direction](docs/integration-notes.md). The approved interface reference is in `design/`.
+See [native engine architecture](docs/native-engines.md), [validation evidence](docs/validation.md), and [the larger integration direction](docs/integration-notes.md). The [design review plan](docs/design-review-plan.md) records separate product decisions and remains planned.

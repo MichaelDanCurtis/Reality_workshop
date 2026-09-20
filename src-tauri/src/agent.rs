@@ -123,7 +123,7 @@ pub async fn photo_propose(
         region_id,
     })
 }
-async fn run_codex(
+pub(crate) async fn run_codex(
     app: &tauri::AppHandle,
     instructions: &str,
     schema: Value,

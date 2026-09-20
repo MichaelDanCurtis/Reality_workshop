@@ -37,3 +37,7 @@ The agent receives the selected object, active workspace, relevant references an
 - https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/FreeCAD_Scripting_Basics.md
 - https://developer.apple.com/augmented-reality/roomplan/
 - https://developer.apple.com/videos/play/wwdc2023/10191/
+
+## Native workspace progress
+
+All five engines now execute real operations behind the common shell: GIMP Edit, Krita Paint, darktable Develop/Library, Blender Scene, and FreeCAD CAD. Workflow studio uses their same validated commands for AI or JSON operation recipes. Native files, originals, and development sidecars persist with the project. See [the native adapter contract](native-engines.md) and [validation evidence](validation.md) for the implemented subsets and exact verification boundaries. Full application parity, arbitrary graph authoring, generative image editing, and iPhone capture remain separate work.

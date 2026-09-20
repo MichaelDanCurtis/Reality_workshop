@@ -71,22 +71,45 @@ pub struct Project {
     pub regions: Vec<PhotoRegion>,
     #[serde(default)]
     pub photo_edits: std::collections::HashMap<String, crate::photos::PhotoEdit>,
+    #[serde(default)]
+    pub native_documents: Vec<crate::engines::NativeDocument>,
+    #[serde(default)]
+    pub spatial_documents: Vec<crate::spatial::SpatialDocument>,
+    #[serde(default)]
+    pub developed_photos: Vec<crate::develop::DevelopedPhoto>,
+    #[serde(default)]
+    pub workflows: Vec<WorkflowRecipe>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct WorkflowRecipe {
+    pub id: String,
+    pub name: String,
+    pub source: String,
+    pub selected: String,
+    pub mode: String,
+    pub instruction: String,
+    pub script: String,
+    pub positions: Vec<[f64; 2]>,
 }
 impl Default for Project {
     fn default() -> Self {
         Self {
-            schema: 3,
+            schema: 7,
             name: "Coastal house".into(),
             scene: SceneSettings::default(),
             assets: vec![],
             regions: vec![],
             photo_edits: Default::default(),
+            native_documents: vec![],
+            spatial_documents: vec![],
+            developed_photos: vec![],
+            workflows: vec![],
         }
     }
 }
 impl Project {
     pub fn validate(&self) -> Result<(), String> {
-        if self.schema != 3 {
+        if self.schema != 7 {
             return Err("Unsupported project version".into());
         }
         if self.name.trim().is_empty() || self.name.len() > 120 {
@@ -116,7 +139,28 @@ impl Project {
         if self.regions.len() > 500 {
             return Err("This build supports up to 500 photo regions".into());
         }
-        let estimated_size = self.assets.iter().map(|a| a.data_url.len()).sum::<usize>()
+        let estimated_size = self
+            .native_documents
+            .iter()
+            .map(|d| {
+                d.preview.len()
+                    + d.selection_preview.as_ref().map_or(0, |p| p.len())
+                    + d.layers.len() * 1000
+                    + d.presets.iter().map(String::len).sum::<usize>()
+            })
+            .sum::<usize>()
+            + self
+                .developed_photos
+                .iter()
+                .map(|p| p.preview.len() + p.original_preview.len())
+                .sum::<usize>()
+            + self
+                .spatial_documents
+                .iter()
+                .flat_map(|d| &d.objects)
+                .map(|o| (o.vertices.len() + o.triangles.len()) * 24)
+                .sum::<usize>()
+            + self.assets.iter().map(|a| a.data_url.len()).sum::<usize>()
             + self
                 .regions
                 .iter()
@@ -151,6 +195,28 @@ impl Project {
                 return Err("An edit references a missing photo".into());
             }
             edit.validate()?;
+        }
+        crate::engines::validate_documents(&self.native_documents)?;
+        crate::spatial::validate(&self.spatial_documents)?;
+        crate::develop::validate(&self.developed_photos)?;
+        if self.workflows.len() > 32
+            || self.workflows.iter().any(|w| {
+                uuid::Uuid::parse_str(&w.id).is_err()
+                    || w.name.is_empty()
+                    || w.name.len() > 120
+                    || w.source.len() > 200
+                    || w.selected.len() > 200
+                    || !matches!(w.mode.as_str(), "ai" | "script")
+                    || w.instruction.len() > 8000
+                    || w.script.len() > 64000
+                    || w.positions.len() != 3
+                    || w.positions
+                        .iter()
+                        .flatten()
+                        .any(|v| !v.is_finite() || !(0.0..=1500.0).contains(v))
+            })
+        {
+            return Err("Invalid saved workflow".into());
         }
         self.scene.validate()
     }
@@ -247,8 +313,8 @@ impl Document {
         self.snapshot()
     }
     pub fn load(&mut self, mut p: Project, path: String) -> Result<Snapshot, String> {
-        if p.schema == 1 || p.schema == 2 {
-            p.schema = 3;
+        if (1..=6).contains(&p.schema) {
+            p.schema = 7;
         }
         p.validate()?;
         self.project = p;
@@ -316,7 +382,7 @@ mod tests {
         let old: Project = serde_json::from_value(json).unwrap();
         let mut d = Document::default();
         d.load(old, "old.workshop".into()).unwrap();
-        assert_eq!(d.project.schema, 3);
+        assert_eq!(d.project.schema, 7);
         assert_eq!(d.project.scene, original.scene);
         assert!(d.project.regions.is_empty());
     }

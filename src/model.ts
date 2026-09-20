@@ -48,6 +48,10 @@ export const neutralEdit: PhotoEdit = {
 };
 export interface Project {
   schema: number;
+  native_documents?: import("./engine-model").NativeDocument[];
+  spatial_documents?: import("./SpatialEditor").SpatialDocument[];
+  developed_photos?: import("./DevelopEditor").DevelopedPhoto[];
+  workflows?: import("./WorkflowEditor").WorkflowRecipe[];
   name: string;
   scene: SceneSettings;
   assets: Asset[];
@@ -82,7 +86,7 @@ export interface Proposal {
 }
 export const initial: Snapshot = {
   project: {
-    schema: 3,
+    schema: 7,
     name: "Coastal house",
     scene: {
       pool_width: 6,

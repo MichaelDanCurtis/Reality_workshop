@@ -48,6 +48,10 @@ import {
 } from "lucide-react";
 import { Viewport, type ViewportHandle } from "./Viewport";
 import { PhotoEditor } from "./PhotoEditor";
+import { NativeEditor } from "./NativeEditor";
+import { SpatialEditor } from "./SpatialEditor";
+import { DevelopEditor } from "./DevelopEditor";
+import { WorkflowEditor } from "./WorkflowEditor";
 import {
   commit,
   current,
@@ -206,16 +210,30 @@ export function App() {
   const doc = useProject(),
     render = useRender();
   const view = useRef<ViewportHandle>(null);
+  const [legacyDevelop, setLegacyDevelop] = useState(detached === "photos");
+  const [legacyWorkflow, setLegacyWorkflow] = useState(false);
+  const [developId, setDevelopId] = useState<string | null>(null);
+  const [sceneStudy, setSceneStudy] = useState(
+    detached === "wireframe" || detached === "render",
+  );
   const [workspace, setWorkspace] = useState(
-    detached === "photos"
-      ? "Edit"
-      : detached === "workflows"
-        ? "Workflows"
-        : detached === "library"
-          ? "Library"
-          : detached === "wireframe" || detached === "render"
-            ? "Scene"
-            : "Edit",
+    detached === "cad"
+      ? "CAD"
+      : detached === "scene3d"
+        ? "Scene"
+        : detached === "paint"
+          ? "Paint"
+          : detached === "edit"
+            ? "Edit"
+            : detached === "photos" || detached === "develop"
+              ? "Develop"
+              : detached === "workflows"
+                ? "Workflows"
+                : detached === "library"
+                  ? "Library"
+                  : detached === "wireframe" || detached === "render"
+                    ? "Scene"
+                    : "Edit",
   );
   const [mode, setMode] = useState(
     detached === "wireframe"
@@ -377,7 +395,8 @@ export function App() {
       "Import reference photographs",
       s.revision,
     );
-    setWorkspace("Edit");
+    setWorkspace("Develop");
+    setLegacyDevelop(true);
     setNotice(
       `${assets.length} reference image${assets.length === 1 ? "" : "s"} imported`,
     );
@@ -546,7 +565,8 @@ export function App() {
           className="photo-card"
           onClick={() => {
             setPhotoAssetId(a.id);
-            setWorkspace("Edit");
+            setWorkspace("Develop");
+            setLegacyDevelop(true);
           }}
         >
           <img src={a.data_url} alt={a.name} />
@@ -568,7 +588,7 @@ export function App() {
         <div className="brand">
           <span className="brand-mark">⌘</span>
           <strong>Reality Workshop</strong>
-          <span className="alpha">PHOTO V1</span>
+          <span className="alpha">CREATIVE SUITE</span>
         </div>
         <div className="project-title">
           {doc.project.name}
@@ -582,7 +602,7 @@ export function App() {
         </div>
         <div className="title-actions">
           <IconButton
-            title="New photo project"
+            title="New studio project"
             onClick={() =>
               void protect(async () => {
                 if (
@@ -710,106 +730,170 @@ export function App() {
         </div>
       )}
       <div className="body-grid">
-        {!detached && (
-          <aside className="assets-panel">
-            <SectionLabel
-              action={
-                <IconButton
-                  title="Import reference images"
-                  onClick={() => void protect(importPhoto)}
-                >
-                  <Plus size={15} />
-                </IconButton>
-              }
-            >
-              PROJECT
-            </SectionLabel>
-            <div className="asset-tiles">
-              <button
-                className="asset-tile"
-                onClick={() => setWorkspace("Library")}
+        {!detached &&
+          workspace !== "Develop" &&
+          workspace !== "Library" &&
+          workspace !== "Edit" &&
+          workspace !== "Paint" &&
+          workspace !== "CAD" &&
+          workspace !== "Workflows" &&
+          (workspace !== "Scene" || sceneStudy) && (
+            <aside className="assets-panel">
+              <SectionLabel
+                action={
+                  <IconButton
+                    title="Import reference images"
+                    onClick={() => void protect(importPhoto)}
+                  >
+                    <Plus size={15} />
+                  </IconButton>
+                }
               >
-                <div className="tile-art photos">
-                  <Image size={36} />
-                </div>
-                <span>House photos</span>
-                <small>{doc.project.assets.length} references</small>
-              </button>
-              <button
-                className="asset-tile"
-                onClick={() => {
-                  setWorkspace("Scene");
-                  setMode("wireframe");
-                }}
-              >
-                <div className="tile-art scan">
-                  <Boxes size={40} />
-                </div>
-                <span>Coastal scene</span>
-                <small>Starter geometry</small>
-              </button>
-              <button
-                className="asset-tile"
-                onClick={() => {
-                  setSelected("Pool");
-                  setWorkspace("Scene");
-                }}
-              >
-                <div className="tile-art pool">
-                  <span />
-                </div>
-                <span>Pool study</span>
-                <small>Editable dimensions</small>
-              </button>
-              <button
-                className="asset-tile"
-                onClick={() => setWorkspace("CAD")}
-              >
-                <div className="tile-art cad">
-                  <Box size={36} />
-                </div>
-                <span>CAD objects</span>
-                <small>FreeCAD adapter planned</small>
-              </button>
-            </div>
-            <SectionLabel>SCENE</SectionLabel>
-            <div className="object-list">
-              {objects.map(([name, Icon]) => (
+                PROJECT
+              </SectionLabel>
+              <div className="asset-tiles">
                 <button
-                  className={selected === name ? "selected" : ""}
-                  key={name}
+                  className="asset-tile"
+                  onClick={() => setWorkspace("Library")}
+                >
+                  <div className="tile-art photos">
+                    <Image size={36} />
+                  </div>
+                  <span>House photos</span>
+                  <small>{doc.project.assets.length} references</small>
+                </button>
+                <button
+                  className="asset-tile"
                   onClick={() => {
-                    setSelected(name);
-                    if (name === "Pool") setPanel("properties");
+                    setWorkspace("Scene");
+                    setSceneStudy(true);
+                    setMode("wireframe");
                   }}
                 >
-                  <ChevronRight size={12} />
-                  <Icon size={17} />
-                  <span>{name}</span>
-                  <Eye size={14} />
+                  <div className="tile-art scan">
+                    <Boxes size={40} />
+                  </div>
+                  <span>Coastal scene</span>
+                  <small>Starter geometry</small>
                 </button>
-              ))}
-            </div>
-            <div className="project-foot">
-              <span className="live-dot" />
-              Shared across windows<small>Scene units · metres</small>
-            </div>
-          </aside>
-        )}
+                <button
+                  className="asset-tile"
+                  onClick={() => {
+                    setSelected("Pool");
+                    setWorkspace("Scene");
+                    setSceneStudy(true);
+                  }}
+                >
+                  <div className="tile-art pool">
+                    <span />
+                  </div>
+                  <span>Pool study</span>
+                  <small>Editable dimensions</small>
+                </button>
+                <button
+                  className="asset-tile"
+                  onClick={() => setWorkspace("CAD")}
+                >
+                  <div className="tile-art cad">
+                    <Box size={36} />
+                  </div>
+                  <span>CAD objects</span>
+                  <small>Editable native solids</small>
+                </button>
+              </div>
+              <SectionLabel>SCENE</SectionLabel>
+              <div className="object-list">
+                {objects.map(([name, Icon]) => (
+                  <button
+                    className={selected === name ? "selected" : ""}
+                    key={name}
+                    onClick={() => {
+                      setSelected(name);
+                      if (name === "Pool") setPanel("properties");
+                    }}
+                  >
+                    <ChevronRight size={12} />
+                    <Icon size={17} />
+                    <span>{name}</span>
+                    <Eye size={14} />
+                  </button>
+                ))}
+              </div>
+              <div className="project-foot">
+                <span className="live-dot" />
+                Shared across windows<small>Scene units · metres</small>
+              </div>
+            </aside>
+          )}
         <section className="main-workspace">
           <div
-            hidden={workspace !== "Edit" && workspace !== "Develop"}
+            hidden={workspace !== "Workflows" || legacyWorkflow}
             className="photo-workspace-mount"
           >
+            <WorkflowEditor onStudy={() => setLegacyWorkflow(true)} />
+          </div>
+          <div
+            hidden={workspace !== "Develop" || !legacyDevelop}
+            className="photo-workspace-mount"
+          >
+            <button className="subtle" onClick={() => setLegacyDevelop(false)}>
+              Back to darktable development
+            </button>
             <PhotoEditor
               key={doc.file ?? "unsaved"}
               selectedId={photoAssetId}
               onImport={() => void protect(importPhoto)}
             />
           </div>
-          {workspace === "Scene" ? (
+          <div
+            hidden={workspace !== "Develop" || legacyDevelop}
+            className="photo-workspace-mount"
+          >
+            <DevelopEditor
+              active={workspace === "Develop" && !legacyDevelop}
+              selectedId={developId}
+              onMarkup={() => setLegacyDevelop(true)}
+            />
+          </div>
+          <div hidden={workspace !== "Edit"} className="photo-workspace-mount">
+            <NativeEditor engine="GIMP" active={workspace === "Edit"} />
+          </div>
+          <div hidden={workspace !== "Paint"} className="photo-workspace-mount">
+            <NativeEditor engine="Krita" active={workspace === "Paint"} />
+          </div>
+          <div hidden={workspace !== "CAD"} className="photo-workspace-mount">
+            <SpatialEditor engine="FreeCAD" active={workspace === "CAD"} />
+          </div>
+          <div
+            hidden={workspace !== "Scene" || sceneStudy}
+            className="photo-workspace-mount"
+          >
+            <SpatialEditor
+              engine="Blender"
+              active={workspace === "Scene" && !sceneStudy}
+              onStarter={() => setSceneStudy(true)}
+            />
+          </div>
+          {workspace === "Scene" && sceneStudy ? (
             <>
               <div className="canvas-toolbar">
+                <button onClick={() => setSceneStudy(false)}>
+                  Model documents
+                </button>
+                <button
+                  disabled={busy || !!proposal}
+                  onClick={() =>
+                    void protect(async () => {
+                      if (!view.current) return;
+                      const base = current().revision;
+                      const gltf = await view.current.export();
+                      await invoke("spatial_from_study", { gltf, base });
+                      setSceneStudy(false);
+                    })
+                  }
+                >
+                  Copy to Blender studio
+                </button>
                 <div className="row">
                   <Box size={17} />
                   <strong>{selected}</strong>
@@ -955,26 +1039,29 @@ export function App() {
               )}
             </>
           ) : workspace === "Edit" ||
-            workspace === "Develop" ? null : workspace === "Library" ? (
-            <div className="library">
-              <div className="page-heading">
-                <div>
-                  <small>PROJECT LIBRARY</small>
-                  <h1>Your references, together.</h1>
-                  <p>Original photographs travel with the project.</p>
-                </div>
-                <button
-                  className="subtle"
-                  onClick={() => void protect(() => detach("library"))}
-                >
-                  <ExternalLink size={16} />
-                  Detach
-                </button>
-              </div>
-              {assetGrid}
-            </div>
+            workspace === "CAD" ||
+            workspace === "Scene" ||
+            workspace === "Develop" ||
+            (workspace === "Workflows" && !legacyWorkflow) ||
+            workspace === "Paint" ? null : workspace === "Library" ? (
+            <DevelopEditor
+              active
+              library
+              references={assetGrid}
+              onOpen={(id) => {
+                setDevelopId(id);
+                setLegacyDevelop(false);
+                setWorkspace("Develop");
+              }}
+            />
           ) : workspace === "Workflows" ? (
             <div className="workflow-page">
+              <button
+                className="subtle"
+                onClick={() => setLegacyWorkflow(false)}
+              >
+                Back to Workflow studio
+              </button>
               <div className="page-heading">
                 <div>
                   <small>WORKFLOWS</small>
@@ -1059,6 +1146,7 @@ export function App() {
                         });
                         setPreviewProposal(true);
                         setRecipeStatus("Preview ready in Scene");
+                        setSceneStudy(true);
                         setWorkspace("Scene");
                         setPanel("partner");
                       }}
@@ -1073,8 +1161,8 @@ export function App() {
                 <div>
                   <strong>{recipeStatus}</strong>
                   <p>
-                    Preview → inspect → apply. General node authoring, Python
-                    scripts, and batch image processing are planned.
+                    Preview → inspect → apply. Use Workflow studio for native
+                    image, photo, CAD, and Blender recipes.
                   </p>
                 </div>
               </div>
@@ -1120,7 +1208,12 @@ export function App() {
           )}
         </section>
         {workspace !== "Edit" &&
+          workspace !== "Workflows" &&
+          workspace !== "Library" &&
+          workspace !== "CAD" &&
+          (workspace !== "Scene" || sceneStudy) &&
           workspace !== "Develop" &&
+          workspace !== "Paint" &&
           (!detached || panel === "properties") && (
             <aside className="partner-panel">
               <div className="partner-heading">
@@ -1342,10 +1435,10 @@ export function App() {
         </span>
         <span>
           {busy
-            ? "Blender working in background"
+            ? "Working…"
             : render.status === "complete"
-              ? `Last render · r${render.revision}`
-              : "Local project · no render yet"}
+              ? `Coastal study render · r${render.revision}`
+              : "Local project"}
         </span>
       </footer>
       {(error || notice) && (
@@ -1419,8 +1512,9 @@ export function App() {
               </div>
             ))}
             <p className="muted">
-              Blender rendering and Codex proposals are wired in this build.
-              Other engines are integration targets.
+              Edit, Paint, Develop, Scene, and CAD use their native engines.
+              Each workspace exposes a growing set of tools within the same
+              suite.
             </p>
             <button
               className="subtle"

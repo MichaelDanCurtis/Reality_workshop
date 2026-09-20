@@ -7,3 +7,5 @@ artifacts/
 *.tsbuildinfo
 releases/
 src-tauri/gen/
+
+__pycache__/

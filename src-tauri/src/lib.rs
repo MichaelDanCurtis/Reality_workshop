@@ -1,7 +1,10 @@
 mod agent;
+mod develop;
 mod document;
+mod engines;
 mod photos;
 mod recovery;
+mod spatial;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use document::*;
 use serde::Serialize;
@@ -38,7 +41,7 @@ impl Default for Studio {
     }
 }
 type Reply<T> = Result<T, String>;
-fn publish(app: &tauri::AppHandle, s: &Snapshot) {
+pub(crate) fn publish(app: &tauri::AppHandle, s: &Snapshot) {
     let _ = app.emit("document-changed", s);
     if let Ok(tx) = app.state::<Studio>().recovery.lock() {
         if let Some(tx) = tx.as_ref() {
@@ -54,8 +57,8 @@ fn new_project(app: tauri::AppHandle) -> Reply<Snapshot> {
     *d = Document::default();
     d.revision = revision;
     d.saved_revision = revision;
-    d.project.name = "Untitled photo project".into();
-    d.history = vec!["New photo project".into()];
+    d.project.name = "Untitled studio project".into();
+    d.history = vec!["New studio project".into()];
     let s = d.snapshot();
     publish(&app, &s);
     Ok(s)
@@ -91,7 +94,8 @@ fn history_step(app: tauri::AppHandle, state: State<Studio>, redo: bool) -> Repl
 async fn save_project(app: tauri::AppHandle, path: String) -> Reply<Snapshot> {
     let state = app.state::<Studio>();
     let s = state.document.lock().map_err(|e| e.to_string())?.snapshot();
-    let bytes = serde_json::to_vec_pretty(&s.project).map_err(|e| e.to_string())?;
+    let portable = engines::portable_project(&s.project, Path::new(&path))?;
+    let bytes = serde_json::to_vec_pretty(&portable).map_err(|e| e.to_string())?;
     if bytes.len() > 100_000_000 {
         return Err("The project exceeds the 100 MB file limit".into());
     }
@@ -116,7 +120,8 @@ async fn open_project(app: tauri::AppHandle, path: String) -> Reply<Snapshot> {
         return Err("Project exceeds 100 MB".into());
     }
     let bytes = fs::read(&path).map_err(|e| e.to_string())?;
-    let p: Project = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+    let mut p: Project = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+    engines::resolve_project(&mut p, Path::new(&path))?;
     let s = app
         .state::<Studio>()
         .document
@@ -158,7 +163,20 @@ async fn import_image(path: String) -> Reply<Asset> {
 }
 #[tauri::command]
 fn detach_window(app: tauri::AppHandle, kind: String) -> Reply<()> {
-    if !["wireframe", "render", "workflows", "library", "photos"].contains(&kind.as_str()) {
+    if ![
+        "wireframe",
+        "render",
+        "workflows",
+        "library",
+        "photos",
+        "edit",
+        "paint",
+        "cad",
+        "scene3d",
+        "develop",
+    ]
+    .contains(&kind.as_str())
+    {
         return Err("Unknown workspace".into());
     }
     let label = format!("viewport-{kind}");
@@ -183,6 +201,37 @@ struct Integration {
     capability: String,
 }
 pub fn executable(name: &str) -> Option<PathBuf> {
+    if let Some(path) = std::env::var_os(format!("REALITY_WORKSHOP_{}", name.to_uppercase())) {
+        let path = PathBuf::from(path);
+        if path.is_file() {
+            return Some(path);
+        }
+    }
+    #[cfg(target_os = "windows")]
+    for base in [
+        std::env::var_os("ProgramFiles"),
+        std::env::var_os("ProgramFiles(x86)"),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        let candidates: &[&str] = match name {
+            "GIMP" => &[
+                "GIMP 3/bin/gimp-console-3.2.exe",
+                "GIMP 3/bin/gimp-console-3.0.exe",
+                "GIMP 3/bin/gimp-3.0.exe",
+            ],
+            "Krita" => &["Krita (x64)/bin/krita.exe", "Krita/bin/krita.exe"],
+            _ => &[],
+        };
+        for candidate in candidates {
+            let path = PathBuf::from(&base).join(candidate);
+            if path.is_file() {
+                return Some(path);
+            }
+        }
+    }
+
     if name == "Codex" {
         if let Some(path) = std::env::var_os("REALITY_WORKSHOP_CODEX") {
             let path = PathBuf::from(path);
@@ -204,7 +253,7 @@ pub fn executable(name: &str) -> Option<PathBuf> {
         "Blender" => "/Applications/Blender.app/Contents/MacOS/Blender",
         "FreeCAD" => "/Applications/FreeCAD.app/Contents/MacOS/FreeCAD",
         "GIMP" => "/Applications/GIMP.app/Contents/MacOS/gimp",
-        "Krita" => "/Applications/krita.app/Contents/MacOS/krita",
+        "Krita" => "/Applications/Krita.app/Contents/MacOS/krita",
         "darktable" => "/Applications/darktable.app/Contents/MacOS/darktable",
         _ => "",
     };
@@ -224,7 +273,7 @@ pub fn executable(name: &str) -> Option<PathBuf> {
     dirs.push("/opt/homebrew/bin".into());
     dirs.push("/usr/local/bin".into());
     for d in dirs {
-        for suffix in ["", ".exe"] {
+        for suffix in ["", ".exe", "-3.0", "-3.2", "-3.0.exe", "-3.2.exe"] {
             let p = d.join(format!("{bin}{suffix}"));
             if p.is_file() {
                 return Some(p);
@@ -234,17 +283,25 @@ pub fn executable(name: &str) -> Option<PathBuf> {
     None
 }
 #[tauri::command]
-fn integrations() -> Vec<Integration> {
+fn integrations(app: tauri::AppHandle) -> Vec<Integration> {
     ["Blender", "FreeCAD", "GIMP", "Krita", "darktable", "Codex"]
         .into_iter()
         .map(|n| {
-            let p = executable(n);
+            let p = if n == "darktable" {
+                develop::cli(&app)
+            } else {
+                executable(n)
+            };
             Integration {
                 name: n.into(),
                 available: p.is_some(),
                 path: p.map(|p| p.to_string_lossy().into()),
                 capability: match n {
-                    "Blender" => "Background rendering",
+                    "GIMP" => "Native XCF layers, masks and brush operations",
+                    "Krita" => "Native KRA layers and brush presets",
+                    "Blender" => "Native scenes, meshes, materials and rendering",
+                    "FreeCAD" => "Native parametric solids, STEP and STL",
+                    "darktable" => "Native photo development and XMP recipes",
                     "Codex" => "Design proposals via App Server",
                     _ => "Adapter planned",
                 }
@@ -352,6 +409,9 @@ async fn render_inner(
 pub fn run() {
     tauri::Builder::default()
         .manage(Studio::default())
+        .manage(engines::EngineRuntime::default())
+        .manage(spatial::SpatialRuntime::default())
+        .manage(develop::DevelopRuntime::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
@@ -373,8 +433,31 @@ pub fn run() {
             agent::agent_propose,
             agent::photo_propose,
             photos::photo_preview,
-            photos::export_photos
+            photos::export_photos,
+            engines::engine_open,
+            engines::engine_edit,
+            engines::engine_export,
+            engines::engine_transfer,
+            engines::engine_propose,
+            spatial::spatial_open,
+            spatial::spatial_edit,
+            spatial::spatial_export,
+            spatial::spatial_render,
+            spatial::spatial_propose,
+            spatial::spatial_transfer,
+            spatial::spatial_from_study,
+            develop::develop_import,
+            develop::develop_edit,
+            develop::develop_export,
+            develop::develop_propose,
+            develop::develop_to_edit,
+            develop::develop_apply_preview
         ])
-        .run(tauri::generate_context!())
-        .expect("Unable to start Reality Workshop");
+        .build(tauri::generate_context!())
+        .expect("Unable to start Reality Workshop")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                engines::shutdown(app);
+            }
+        });
 }

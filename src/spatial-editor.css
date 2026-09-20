@@ -1,0 +1,215 @@
+.spatial-editor[hidden] {
+  display: none;
+}
+.spatial-spacer {
+  flex: 1;
+}
+.spatial-grid {
+  display: grid;
+  grid-template-columns: 45px minmax(0, 1fr) 290px;
+  flex: 1;
+  min-height: 0;
+}
+.spatial-tools {
+  border-right: 1px solid #303a3d;
+  padding: 10px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.spatial-tools button {
+  height: 35px;
+  border-radius: 5px;
+}
+.spatial-view {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.spatial-canvas {
+  position: absolute;
+  inset: 0;
+}
+.spatial-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.spatial-view-help {
+  position: absolute;
+  bottom: 15px;
+  left: 20px;
+  pointer-events: none;
+  color: #8a9a9f;
+  font-size: 10px;
+}
+.spatial-inspector {
+  background: #1f292d;
+  border-left: 1px solid #303a3d;
+  overflow: auto;
+}
+.spatial-objects {
+  padding: 5px;
+  border-bottom: 1px solid #303c40;
+  max-height: 220px;
+  overflow: auto;
+}
+.spatial-objects > div {
+  display: flex;
+  min-height: 44px;
+}
+.spatial-objects > div.selected {
+  background: #29483f;
+  border-left: 2px solid #63c9bb;
+}
+.spatial-objects > div > button:first-child {
+  width: 30px;
+  flex-shrink: 0;
+}
+.spatial-objects > div > button:nth-child(2) {
+  justify-content: flex-start;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.spatial-objects span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spatial-objects small {
+  display: block;
+  font-size: 9px;
+  color: #879f9f;
+  margin-top: 4px;
+}
+.spatial-properties {
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.spatial-properties > label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.spatial-properties > label > input {
+  flex: 1;
+  padding: 6px;
+  width: 130px;
+}
+.spatial-properties .section-label {
+  padding: 10px 0 0;
+}
+.spatial-properties .spatial-number {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) 24px;
+  gap: 6px;
+  align-items: center;
+}
+.spatial-number input {
+  width: 100%;
+  padding: 6px;
+}
+.spatial-number small {
+  color: #789695;
+}
+.spatial-properties select {
+  padding: 7px;
+  width: 100%;
+}
+.spatial-properties p,
+.spatial-ai p {
+  font-size: 11px;
+  line-height: 1.65;
+  color: #92a5a8;
+}
+.spatial-ai {
+  padding: 22px 17px;
+}
+.spatial-ai h3 {
+  font-size: 16px;
+  color: #d7e4e3;
+  margin-top: 14px;
+}
+.spatial-ai textarea {
+  width: 100%;
+  height: 115px;
+  resize: vertical;
+  padding: 12px;
+  margin: 12px 0;
+}
+.spatial-ai > .primary {
+  width: 100%;
+}
+.spatial-proposal {
+  border: 1px solid #46615c;
+  background: #223a34;
+  padding: 15px;
+  border-radius: 7px;
+  margin-top: 18px;
+}
+.spatial-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 35px;
+  color: #8da6a8;
+}
+.spatial-empty h2 {
+  font-size: 23px;
+  color: #d9e4e3;
+}
+.spatial-empty p {
+  max-width: 430px;
+  text-align: center;
+  line-height: 1.8;
+}
+.spatial-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  background: #1d292a;
+  border-top: 1px solid #34423f;
+  padding: 5px 12px;
+  color: #8fa7a4;
+  font-size: 10px;
+}
+.spatial-status [role="alert"] {
+  color: #f4b4a0;
+}
+.spatial-render {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 20px;
+  gap: 12px;
+}
+.spatial-render img {
+  max-height: 90%;
+  max-width: 100%;
+  object-fit: contain;
+}
+.spatial-render small {
+  color: #9fb1b3;
+}
+.spatial-editor .native-optionsbar {
+  height: 39px;
+}
+.spatial-editor .native-optionsbar button {
+  font-size: 11px;
+}
+.spatial-editor .native-optionsbar button.active {
+  color: #69cabc;
+  background: #274039;
+  border-radius: 4px;
+  padding: 5px 10px;
+}
