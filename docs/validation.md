@@ -47,3 +47,5 @@ Physical pen behavior, multi-monitor unplug recovery, RAW/ICC accuracy, and Wind
 
 - Optimized macOS application bundle built as version 1.0.0 and copied to `releases/Reality Workshop.app`. Rust Clippy passed with warnings denied; npm audit reported zero vulnerabilities.
 - Final packaged-app launch/recovery screen check was interrupted by the Mac locking. The live workflow checks above were performed in the native development build; recovery-file contents and packaged version metadata were verified independently.
+
+- The copied Mac package initially failed resource-signature validation. Re-signing the complete local app bundle with an ad-hoc signature fixed it; strict deep signature verification passed. `npm run package:mac` now includes that packaging step. This does not constitute distribution notarization.

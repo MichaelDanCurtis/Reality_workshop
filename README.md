@@ -51,6 +51,6 @@ Install Node.js 22+, current stable Rust, and the Tauri 2 prerequisites for your
 - `npm test`
 - `cargo test --manifest-path src-tauri/Cargo.toml --lib`
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --lib -- -D warnings`
-- `npm run tauri -- build --bundles app` on macOS; `npm run tauri -- build` for platform packages elsewhere.
+- `npm run package:mac` creates and verifies the local macOS app in `releases/`; `npm run tauri -- build` for platform packages elsewhere.
 
 See [v1 acceptance](docs/V1.md), [validation evidence](docs/validation.md), and [integration direction](docs/integration-notes.md). The approved interface reference is in `design/`.
