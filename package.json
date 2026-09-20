@@ -1,0 +1,32 @@
+{
+  "name": "reality-workshop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 1547 --strictPort",
+    "build": "tsc -b && vite build",
+    "tauri": "tauri",
+    "desktop": "tauri dev",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2",
+    "lucide-react": "^0.468.0",
+    "react": "^19",
+    "react-dom": "^19",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.180.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "prettier": "^3.9.8",
+    "typescript": "^5.9.2",
+    "vite": "^6.3.5",
+    "vitest": "^5.0.1"
+  }
+}

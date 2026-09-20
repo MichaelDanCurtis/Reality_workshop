@@ -1,0 +1,25 @@
+[package]
+name = "reality-workshop"
+version = "1.0.0"
+edition = "2021"
+
+[lib]
+name = "workshop"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-window-state = "2"
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = "1"
+base64 = "0.22"
+uuid = { version = "1", features = ["v4"] }
+tokio = { version = "1", features = ["process", "io-util", "time", "sync"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
+
+[profile.dev]
+debug = 1

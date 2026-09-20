@@ -1,0 +1,17 @@
+{
+  "identifier": "studio",
+  "description": "Local studio windows",
+  "windows": ["main", "viewport-*", "workspace-*"],
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-confirm",
+    "core:window:allow-available-monitors",
+    "core:window:allow-set-position",
+    "core:window:allow-set-size",
+    "core:window:allow-set-focus",
+    "core:window:allow-close",
+    "window-state:default"
+  ]
+}
