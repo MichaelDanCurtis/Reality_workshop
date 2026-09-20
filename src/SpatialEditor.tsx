@@ -19,6 +19,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { current, detach, useProject } from "./store";
+import { viewportDepthRange } from "./viewport-camera";
 import type { Snapshot } from "./model";
 import "./native-editor.css";
 import "./spatial-editor.css";
@@ -79,6 +80,8 @@ export function ModelCanvas({
     controls: OrbitControls;
     group: THREE.Group;
     renderer: THREE.WebGLRenderer;
+    bounds: THREE.Sphere;
+    draw: () => void;
     fitted: string | null;
     fit: number;
   } | null>(null);
@@ -88,15 +91,51 @@ export function ModelCanvas({
     const element = host.current!;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#192226");
-    const camera = new THREE.PerspectiveCamera(38, 1, 0.001, 1e9);
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.01, 1000);
     camera.up.set(0, 0, 1);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      logarithmicDepthBuffer: true,
+    });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     element.appendChild(renderer.domElement);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    const redraw = () => renderer.render(scene, camera);
-    controls.addEventListener("change", redraw);
+    const bounds = new THREE.Sphere(new THREE.Vector3(), -1);
+    const visible = () => element.clientWidth > 0 && element.clientHeight > 0;
+    const redraw = () => {
+      if (!visible()) return;
+      if (bounds.radius >= 0) {
+        const { near, far } = viewportDepthRange(
+          camera.position.distanceTo(controls.target),
+          camera.position.distanceTo(bounds.center),
+          bounds.radius,
+        );
+        if (camera.near !== near || camera.far !== far) {
+          camera.near = near;
+          camera.far = far;
+          camera.updateProjectionMatrix();
+        }
+      }
+      renderer.render(scene, camera);
+    };
+    // Coalesce pointer events and render only while the camera is changing.
+    // OrbitControls emits change from update(); never draw twice for that event.
+    let frame = 0;
+    let updating = false;
+    const requestDraw = () => {
+      if (frame || updating || !visible()) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (!visible()) return;
+        updating = true;
+        const moving = controls.update();
+        updating = false;
+        redraw();
+        if (moving) requestDraw();
+      });
+    };
+    controls.addEventListener("change", requestDraw);
     scene.add(new THREE.HemisphereLight(0xe8f7ff, 0x385258, 2.2));
     const light = new THREE.DirectionalLight(0xffffff, 3);
     light.position.set(3, -5, 8);
@@ -109,6 +148,8 @@ export function ModelCanvas({
       controls,
       group,
       renderer,
+      bounds,
+      draw: redraw,
       fitted: null,
       fit: -1,
     };
@@ -144,17 +185,10 @@ export function ModelCanvas({
     };
     renderer.domElement.addEventListener("pointerdown", down);
     renderer.domElement.addEventListener("pointerup", pick);
-    let frame = 0;
-    const draw = () => {
-      controls.update();
-      renderer.render(scene, camera);
-      frame = requestAnimationFrame(draw);
-    };
-    draw();
     return () => {
       cancelAnimationFrame(frame);
       resize.disconnect();
-      controls.removeEventListener("change", redraw);
+      controls.removeEventListener("change", requestDraw);
       controls.dispose();
       renderer.dispose();
       renderer.domElement.remove();
@@ -182,17 +216,45 @@ export function ModelCanvas({
       g.setIndex(o.triangles);
       g.computeVertexNormals();
       const m = new THREE.MeshStandardMaterial({
-        color: o.id === selected ? "#72d8cb" : o.color,
+        color: o.color,
         roughness: 0.65,
         metalness: 0.12,
         flatShading: true,
         side: THREE.DoubleSide,
-        wireframe,
       });
       const mesh = new THREE.Mesh(g, m);
       mesh.userData.id = o.id;
       r.group.add(mesh);
     }
+    new THREE.Box3().setFromObject(r.group).getBoundingSphere(r.bounds);
+    r.draw();
+    return dispose;
+  }, [document]);
+  useEffect(() => {
+    const r = runtime.current;
+    if (!r) return;
+    const objects = new Map(document.objects.map((o) => [o.id, o]));
+    for (const child of r.group.children) {
+      const mesh = child as THREE.Mesh<
+        THREE.BufferGeometry,
+        THREE.MeshStandardMaterial
+      >;
+      const object = objects.get(mesh.userData.id);
+      if (!object) continue;
+      mesh.material.color.set(
+        object.id === selected ? "#72d8cb" : object.color,
+      );
+      if (mesh.material.wireframe !== wireframe) {
+        mesh.material.wireframe = wireframe;
+        // Three uses a different normal shader for flat-shaded faces and lines.
+        mesh.material.needsUpdate = true;
+      }
+    }
+    r.draw();
+  }, [document, selected, wireframe]);
+  useEffect(() => {
+    const r = runtime.current;
+    if (!r) return;
     if (r.fitted !== document.id || r.fit !== fit) {
       const focus =
         focusId && r.group.children.find((o) => o.userData.id === focusId);
@@ -204,19 +266,14 @@ export function ModelCanvas({
         r.camera.position
           .copy(center)
           .add(new THREE.Vector3(1.3, -1.8, 1.2).multiplyScalar(size));
-        r.camera.near = Math.max(size / 10000, 0.0001);
-        r.camera.far = size * 10000;
-        r.camera.updateProjectionMatrix();
         r.controls.update();
       }
       r.fitted = document.id;
       r.fit = fit;
     }
-    // Webviews may throttle animation frames while another window is active.
-    // A document change must still replace the previously displayed geometry.
-    r.renderer.render(r.scene, r.camera);
-    return dispose;
-  }, [document, selected, wireframe, fit, focusId]);
+    // Explicit framing must also work in webviews with throttled animation frames.
+    r.draw();
+  }, [document.id, fit, focusId]);
   return (
     <div
       ref={host}
